@@ -1,0 +1,42 @@
+from pprint import pprint
+from dotenv import load_dotenv
+
+from app.graph import build_graph
+
+
+def main() -> None:
+    load_dotenv()
+
+    graph = build_graph()
+
+    question = input("Ask a question about the university database: ").strip()
+    debug_input = input("Show debug output? (y/n): ").strip().lower()
+    debug = debug_input == "y"
+
+    initial_state = {
+        "question": question,
+        "trace": [],
+    }
+
+    result = graph.invoke(initial_state)
+
+    print("\nFinal answer:")
+    print(result.get("final_answer", ""))
+
+    if debug:
+        print("\nGenerated SQL:")
+        print(result.get("generated_sql", ""))
+
+        print("\nValidated SQL:")
+        print(result.get("validated_sql", ""))
+
+        if result.get("error"):
+            print("\nError:")
+            print(result["error"])
+
+    print("\nTrace:")
+    pprint(result.get("trace", []))
+
+
+if __name__ == "__main__":
+    main()
