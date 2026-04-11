@@ -61,6 +61,7 @@ def repair_sql_node(state: dict) -> dict:
                 "failed_sql": failed_sql,
                 "error_message": error_message,
                 "repair_error": state["error"],
+                "repair_attempts": state["repair_attempts"],
             },
         )
 
