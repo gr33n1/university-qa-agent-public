@@ -1,5 +1,4 @@
-from langchain_google_genai import ChatGoogleGenerativeAI
-
+from app.llm import get_llm
 from app.prompts import ANSWER_FORMATTING_PROMPT
 from app.tracing import append_trace
 
@@ -25,17 +24,30 @@ def format_answer_node(state: dict) -> dict:
     question = state["question"]
     query_result = state.get("query_result", [])
 
-    llm = ChatGoogleGenerativeAI(
-        model="gemini-2.5-flash",
-        temperature=0,
-    )
+    llm = get_llm()
 
     prompt = ANSWER_FORMATTING_PROMPT.format(
         question=question,
         query_result=query_result,
     )
 
-    response = llm.invoke(prompt)
+    try:
+        response = llm.invoke(prompt)
+    except Exception as e:
+        state["error"] = f"Answer formatting failed: {e}"
+        state["last_error_stage"] = "format_answer"
+        state["final_answer"] = "I found the database result, but failed to format the final answer."
+
+        append_trace(
+            state,
+            "format_answer_error",
+            {
+                "error": str(e),
+                "final_answer": state["final_answer"],
+            },
+        )
+        return state
+
     final_answer = response.content.strip()
 
     state["final_answer"] = final_answer

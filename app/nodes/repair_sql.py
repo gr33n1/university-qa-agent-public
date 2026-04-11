@@ -1,5 +1,6 @@
 from langchain_google_genai import ChatGoogleGenerativeAI
 
+from app.llm import get_llm
 from app.prompts import SQL_REPAIR_PROMPT
 from app.tracing import append_trace
 
@@ -19,12 +20,9 @@ def repair_sql_node(state: dict) -> dict:
     question = state["question"]
     schema_context = state["schema_context"]
     failed_sql = state.get("failed_sql", "")
-    error_message = state.get("last_db_error") or state.get("error", "")
+    error_message = state.get("error", "") or state.get("last_db_error", "")
 
-    llm = ChatGoogleGenerativeAI(
-        model="gemini-2.5-flash",
-        temperature=0,
-    )
+    llm = get_llm()
 
     prompt = SQL_REPAIR_PROMPT.format(
         question=question,
@@ -33,23 +31,37 @@ def repair_sql_node(state: dict) -> dict:
         error_message=error_message,
     )
 
-    response = llm.invoke(prompt)
-    repaired_sql = response.content.strip()
+    try:
+        response = llm.invoke(prompt)
+        repaired_sql = response.content.strip()
 
-    state["generated_sql"] = repaired_sql
-    state["validated_sql"] = ""
-    state["error"] = ""
-    state["repair_attempts"] = state.get("repair_attempts", 0) + 1
+        state["generated_sql"] = repaired_sql
+        state["validated_sql"] = ""
+        state["error"] = ""
+        state["repair_attempts"] = state.get("repair_attempts", 0) + 1
 
-    append_trace(
-        state,
-        "repair_sql",
-        {
-            "failed_sql": failed_sql,
-            "error_message": error_message,
-            "repaired_sql": repaired_sql,
-            "repair_attempts": state["repair_attempts"],
-        },
-    )
+        append_trace(
+            state,
+            "repair_sql",
+            {
+                "failed_sql": failed_sql,
+                "error_message": error_message,
+                "repaired_sql": repaired_sql,
+                "repair_attempts": state["repair_attempts"],
+            },
+        )
+    except Exception as exc:
+        state["error"] = f"Failed to repair SQL: {exc}"
+        state["last_error_stage"] = "repair_sql"
+
+        append_trace(
+            state,
+            "repair_sql_error",
+            {
+                "failed_sql": failed_sql,
+                "error_message": error_message,
+                "repair_error": state["error"],
+            },
+        )
 
     return state
