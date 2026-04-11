@@ -33,6 +33,9 @@ def execute_sql_node(state: dict) -> dict:
     except Exception as exc:
         state["error"] = str(exc)
         state["query_result"] = []
+        state["last_error_stage"] = "execute_sql"
+        state["last_db_error"] = str(exc)
+        state["failed_sql"] = sql
 
         append_trace(
             state,

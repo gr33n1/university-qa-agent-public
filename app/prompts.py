@@ -39,3 +39,35 @@ User question:
 SQL result:
 {query_result}
 """
+
+SQL_REPAIR_PROMPT = """
+You are fixing a failed SQLite SELECT query for a university database.
+
+Given:
+1. The original user question
+2. The database schema
+3. The SQL query that failed
+4. The error message
+
+Return a corrected SQLite SELECT query only.
+
+Rules:
+- Output only SQL
+- Do not include markdown
+- Do not include explanations
+- Only generate a single SELECT statement
+- Use the schema exactly as provided
+- Fix the query conservatively based on the database error
+
+User question:
+{question}
+
+Schema:
+{schema_context}
+
+Failed SQL:
+{failed_sql}
+
+Error message:
+{error_message}
+"""

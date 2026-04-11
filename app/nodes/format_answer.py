@@ -5,8 +5,14 @@ from app.tracing import append_trace
 
 
 def format_answer_node(state: dict) -> dict:
+
     if state.get("error"):
-        state["final_answer"] = f"I couldn't complete your request: {state['error']}"
+        stage = state.get("last_error_stage", "unknown_stage")
+        attempts = state.get("repair_attempts", 0)
+        state["final_answer"] = (
+            f"I couldn't complete your request after {attempts} repair attempt(s). "
+            f"Last failure was in {stage}: {state['error']}"
+        )
         append_trace(
             state,
             "format_answer_error",

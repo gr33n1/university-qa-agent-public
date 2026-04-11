@@ -16,6 +16,8 @@ def main() -> None:
     initial_state = {
         "question": question,
         "trace": [],
+        "repair_attempts": 0,
+        "max_repair_attempts": 1,
     }
 
     result = graph.invoke(initial_state)

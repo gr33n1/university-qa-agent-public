@@ -21,6 +21,8 @@ def validate_sql_node(state: dict) -> dict:
 
     if not sql or not sql.strip():
         state["error"] = "Generated SQL is empty."
+        state["last_error_stage"] = "validate_sql"
+        state["failed_sql"] = sql
         append_trace(
             state,
             "validate_sql_error",
@@ -36,6 +38,8 @@ def validate_sql_node(state: dict) -> dict:
 
     if len(sql_clean) > MAX_SQL_LENGTH:
         state["error"] = "Generated SQL is too long."
+        state["last_error_stage"] = "validate_sql"
+        state["failed_sql"] = sql_clean
         append_trace(
             state,
             "validate_sql_error",
@@ -48,6 +52,8 @@ def validate_sql_node(state: dict) -> dict:
 
     if not sql_lower.startswith("select"):
         state["error"] = "Only SELECT queries are allowed."
+        state["last_error_stage"] = "validate_sql"
+        state["failed_sql"] = sql_clean
         append_trace(
             state,
             "validate_sql_error",
@@ -60,6 +66,8 @@ def validate_sql_node(state: dict) -> dict:
 
     if sql_clean.count(";") > 1:
         state["error"] = "Only a single SQL statement is allowed."
+        state["last_error_stage"] = "validate_sql"
+        state["failed_sql"] = sql_clean
         append_trace(
             state,
             "validate_sql_error",
@@ -73,6 +81,8 @@ def validate_sql_node(state: dict) -> dict:
     for keyword in FORBIDDEN_SQL_KEYWORDS:
         if keyword in sql_lower:
             state["error"] = f"Forbidden SQL keyword detected: {keyword}"
+            state["last_error_stage"] = "validate_sql"
+            state["failed_sql"] = sql_clean
             append_trace(
                 state,
                 "validate_sql_error",
@@ -89,7 +99,6 @@ def validate_sql_node(state: dict) -> dict:
         state,
         "validate_sql",
         {
-            "validated_sql": state["validated_sql"],
             "status": "passed",
         },
     )
