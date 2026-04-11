@@ -6,6 +6,11 @@ def test_students_table_exists():
     assert repo.table_exists("students") is True
 
 
+def test_unknown_table_does_not_exist():
+    repo = DatabaseRepository()
+    assert repo.table_exists("no_such_table") is False
+
+
 def test_can_count_students():
     repo = DatabaseRepository()
     rows = repo.execute_select("SELECT COUNT(*) AS count FROM students")

@@ -1,38 +1,35 @@
 from app.nodes.generate_sql import generate_sql_node
+from tests.mocks import FakeSQLLLM
 
 
-class FakeResponse:
-    def __init__(self, content: str):
-        self.content = content
-
-
-class FakeLLM:
-    def __init__(self, *args, **kwargs):
-        pass
-
-    def invoke(self, prompt: str):
-        return FakeResponse(
-            """
-            SELECT COUNT(*) AS student_count
-            FROM students;
-            """
-        )
-
-
-def test_generate_sql_node_creates_sql(monkeypatch):
+def test_generate_sql_node_creates_sql(monkeypatch, base_state):
     monkeypatch.setattr(
-        "app.nodes.generate_sql.ChatGoogleGenerativeAI",
-        FakeLLM,
+        "app.nodes.generate_sql.get_llm",
+        lambda **kwargs: FakeSQLLLM(),
     )
 
-    state = {
-        "question": "How many students are there?",
-        "schema_context": "dummy schema",
-        "trace": [],
-    }
+    result = generate_sql_node(base_state)
 
-    result = generate_sql_node(state)
-
-    assert result.get("error") is None
-    assert result["generated_sql"].strip() == "SELECT COUNT(*) AS student_count\n            FROM students;"
+    assert not result["error"]
+    sql = result["generated_sql"].strip().lower()
+    assert sql.startswith("select")
+    assert "from students" in sql
+    assert "count(" in sql
     assert any(step["step"] == "generate_sql" for step in result["trace"])
+
+
+def test_generate_sql_handles_llm_exception(monkeypatch, base_state):
+    class FailingLLM:
+        def invoke(self, prompt: str):
+            raise RuntimeError("LLM is down")
+
+    monkeypatch.setattr(
+        "app.nodes.generate_sql.get_llm",
+        lambda **kwargs: FailingLLM(),
+    )
+
+    result = generate_sql_node(base_state)
+
+    assert "SQL generation failed" in result["error"]
+    assert result["last_error_stage"] == "generate_sql"
+    assert result["trace"][-1]["step"] == "generate_sql_error"
