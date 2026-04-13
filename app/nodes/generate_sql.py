@@ -39,8 +39,7 @@ def generate_sql_node(state: dict) -> dict:
         {
             "question": question,
             "generated_sql": sql,
-            "provider": "gemini",
-            "model": "gemini-2.5-flash",
+            "model": getattr(llm, "model", llm.__class__.__name__),
         },
     )
     return state

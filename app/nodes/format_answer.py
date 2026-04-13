@@ -57,8 +57,7 @@ def format_answer_node(state: dict) -> dict:
         "format_answer",
         {
             "final_answer": final_answer,
-            "provider": "gemini",
-            "model": "gemini-2.5-flash",
+            "model": getattr(llm, "model", llm.__class__.__name__),
         },
     )
     return state
